@@ -289,7 +289,8 @@
                 hero: {
                     available: 'AVAILABLE FOR NEW OPPORTUNITIES',
                     title: '苏 玉',
-                    subtitle: 'AI 驱动的体验设计研究者',
+                    subtitle: 'AI 驱动的产品体验设计师',
+                    motto: '「路漫漫其修远兮，吾将上下而求索」',
                     tags: ['10 年资深设计师', '前设计团队负责人', 'AI + 设计融合探索者'],
                     desc: '从服务百万级用户的互联网大厂，到管理 10+ 人的跨职能团队，再到深耕金融与医疗 AI 的垂直领域。我始终坚持以「用户为中心」为底层逻辑，探索 AI 工具与设计的深度融合，用设计思维重构产品体验，为数字产品注入高效、有温度的用户价值。',
                     btnChat: 'Online - 对话 Sue Lab 数字分身',
@@ -359,7 +360,8 @@
                 hero: {
                     available: 'AVAILABLE FOR NEW OPPORTUNITIES',
                     title: 'Sue',
-                    subtitle: 'AI-Driven Experience Design Researcher',
+                    subtitle: 'AI-Driven Product Experience Designer',
+                    motto: 'The way ahead is long; I see no ending, yet high and low I will search with my will unbending.',
                     tags: ['10 Yrs Senior Designer', 'Ex-Design Lead', 'AI + Design Explorer'],
                     desc: 'From serving millions of users in top tech companies, to managing cross-functional teams of 10+, to diving deep into AI for finance and healthcare. I always adhere to "user-centricity" as the underlying logic, exploring the deep integration of AI tools and design, reconstructing product experiences with design thinking, and injecting efficient, warm user value into digital products.',
                     btnChat: 'Online - Chat with Sue Lab AI',
@@ -633,7 +635,8 @@ Sue Lab 是一名拥有 10 年经验的资深设计师、前设计团队负责�
                                             {t.hero.available}
                                         </motion.div>
                                         <motion.h1 variants={fadeUpVariant} className="text-4xl md:text-6xl font-black mb-6 tracking-tighter text-gradient">{t.hero.title}</motion.h1>
-                                        <motion.h2 variants={fadeUpVariant} className="text-2xl md:text-3xl text-lab-text-strong font-medium mb-8 tracking-tight">{t.hero.subtitle}</motion.h2>
+                                        <motion.h2 variants={fadeUpVariant} className="text-2xl md:text-3xl text-lab-text-strong font-medium mb-2 tracking-tight">{t.hero.subtitle}</motion.h2>
+                                        <motion.p variants={fadeUpVariant} className="text-sm md:text-base text-lab-muted mb-8 font-normal">{t.hero.motto}</motion.p>
                                         <motion.div variants={staggerContainer} className="flex flex-wrap justify-center lg:justify-start gap-3 mb-8">
                                             {t.hero.tags.map((tag, idx) => (
                                                 <motion.span variants={fadeUpVariant} key={idx} className="px-4 py-1.5 bg-lab-tag rounded-full text-sm text-white hover:text-lab-accent transition-colors cursor-default">{tag}</motion.span>
