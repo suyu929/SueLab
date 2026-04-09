@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sue Lab - AI 驱动的体验设计研究者</title>
+    
+    <!-- Fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;700;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap">
+    <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/gilroy-bold">
+
+    <!-- Tailwind CSS 3.4 CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans SC', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                        gilroy: ['Gilroy', 'Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        lab: {
+                            bg: 'var(--bg-color)',
+                            text: 'var(--text-color)',
+                            muted: 'var(--muted-color)',
+                            accent: 'var(--accent-color)',
+                            border: 'var(--border-color)',
+                            card: 'var(--card-color)',
+                            tag: 'var(--tag-color)',
+                            surface: 'var(--surface-color)',
+                            'text-strong': 'var(--text-strong)',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style type="text/css">
+        :root {
+            /* Light Mode (Default) */
+            --bg-color: #F8F9FA;
+            --text-strong: #303133;
+            --text-color: rgba(48, 49, 51, 0.8);
+            --muted-color: rgba(48, 49, 51, 0.8);
+            --accent-color: #00B4D8;
+            --accent-rgb: 0, 180, 216;
+            --border-color: rgba(0, 0, 0, 0.1);
+            --card-color: #FFFFFF;
+            --tag-color: #121110;
+            --surface-color: rgba(0, 0, 0, 0.05);
+            --card-hover-bg: var(--card-color);
+            --spotlight-blur: 50px;
+            
+            --hover-color-1: rgba(209, 249, 249, 0.6);
+            --hover-color-2: rgba(209, 249, 226, 0.6);
+            --hover-color-3: rgba(226, 209, 249, 0.6);
+            --hover-color-4: rgba(209, 230, 249, 0.6);
+        }
+
+        .dark {
+            /* Dark Mode */
+            --bg-color: #050505;
+            --text-strong: #FFFFFF;
+            --text-color: rgba(255, 255, 255, 0.8);
+            --muted-color: rgba(255, 255, 255, 0.8);
+            --accent-color: #00B4D8;
+            --accent-rgb: 0, 180, 216;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --card-color: #121110;
+            --tag-color: #121110;
+            --surface-color: rgba(255, 255, 255, 0.05);
+            --card-hover-bg: var(--card-color);
+            --spotlight-blur: 100px;
+
+            --hover-color-1: rgba(0, 180, 216, 0.2);
+            --hover-color-2: rgba(0, 245, 212, 0.2);
+            --hover-color-3: rgba(0, 180, 216, 0.15);
+            --hover-color-4: rgba(0, 245, 212, 0.15);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: "Inter", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .text-gradient {
+            background: linear-gradient(to right, #00B4D8, #00F5D4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--muted-color);
+        }
+    </style>
+
+    <!-- Babel Standalone for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Import Map for ESM -->
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@19",
+            "react-dom": "https://esm.sh/react-dom@19",
+            "react-dom/client": "https://esm.sh/react-dom@19/client",
+            "lucide-react": "https://esm.sh/lucide-react",
+            "motion/react": "https://esm.sh/motion/react",
+            "@google/genai": "https://esm.sh/@google/genai"
+        }
+    }
+    </script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useRef, useState, useEffect } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { 
+            MessageCircle, Box, Activity, Cpu, Terminal, Sparkles, 
+            Wrench, Briefcase, Clock, ArrowRight, Menu, X, Globe, 
+            ChevronLeft, ChevronRight, Moon, Sun 
+        } from 'lucide-react';
+        import { GoogleGenAI } from '@google/genai';
+        import { motion, AnimatePresence } from 'motion/react';
+
+        // --- Premium Spotlight Card Component ---
+        function SpotlightCard({ children, className = "" }) {
+            const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+            const [isHovered, setIsHovered] = useState(false);
+            const containerRef = useRef(null);
+
+            const handleMouseMove = (e) => {
+                if (containerRef.current) {
+                    const rect = containerRef.current.getBoundingClientRect();
+                    setMousePos({
+                        x: e.clientX - rect.left,
+                        y: e.clientY - rect.top,
+                    });
+                }
+            };
+
+            return (
+                <div
+                    ref={containerRef}
+                    onMouseMove={handleMouseMove}
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}
+                    className={`relative overflow-hidden rounded-2xl shadow-none dark:shadow-2xl transition-all duration-300 group ${className}`}
+                >
+                    {/* Dynamic Spotlight Glow */}
+                    <div 
+                        className={`absolute inset-0 z-10 pointer-events-none transition-opacity duration-500 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+                        style={{
+                            background: `radial-gradient(350px circle at ${mousePos.x}px ${mousePos.y}px, var(--hover-color-1) 0%, var(--hover-color-2) 35%, var(--hover-color-3) 70%, transparent 100%)`,
+                            filter: `blur(var(--spotlight-blur))`
+                        }}
+                    />
+                    
+                    {/* Solid Background */}
+                    <div className="absolute inset-[1px] bg-lab-card rounded-[15px] z-0 transition-colors duration-300" />
+                    <div className="relative z-10 h-full">
+                        {children}
+                    </div>
+                </div>
+            );
+        }
+
+        // --- Project Grid Component ---
+        function ProjectGrid({ items }) {
+            return (
+                <div className="relative">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-4">
+                        {items.map((item, idx) => (
+                            <div key={idx} className="group/card hover:-translate-y-2 transition-transform duration-500">
+                                <SpotlightCard className="h-full">
+                                    <div className="p-8 md:p-10 flex flex-col h-full" style={{
+                                        background: item.num === '02' 
+                                            ? 'linear-gradient(to bottom, #00A06F, #08291F)' 
+                                            : item.num === '03'
+                                            ? 'linear-gradient(to bottom, #614229, #2B1D13)'
+                                            : 'linear-gradient(to bottom, #304FB7, #0A1744)'
+                                    }}>
+                                        <div className="relative z-10 mb-10">
+                                            <div className="text-5xl md:text-6xl font-gilroy font-bold text-white/20 mb-6">{item.num}</div>
+                                            <h4 className="text-2xl md:text-3xl font-bold text-white mb-4 tracking-tight">{item.title}</h4>
+                                            <p className="text-white/80 text-sm md:text-base leading-relaxed font-normal">{item.desc}</p>
+                                        </div>
+
+                                        <div className="relative z-10 mt-auto">
+                                            <a 
+                                                href={item.link || "#"} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="block cursor-pointer group/img-link"
+                                            >
+                                                {item.images && item.images.length === 1 ? (
+                                                    <div className="rounded-2xl overflow-hidden shadow-none dark:shadow-2xl aspect-[16/9] bg-lab-surface relative">
+                                                        <img src={item.images[0]} alt={item.title} className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-700" />
+                                                        <div className="absolute inset-0 bg-black/0 group-hover/img-link:bg-black/10 transition-colors duration-300" />
+                                                    </div>
+                                                ) : (
+                                                    <div className="grid grid-cols-3 gap-3">
+                                                        {item.images?.map((img, i) => (
+                                                            <div key={i} className="rounded-xl overflow-hidden shadow-none dark:shadow-2xl aspect-[16/9] bg-lab-surface relative">
+                                                                <img src={img} alt={`${item.title} ${i}`} className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-700" />
+                                                                <div className="absolute inset-0 bg-black/0 group-hover/img-link:bg-black/10 transition-colors duration-300" />
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </a>
+                                        </div>
+                                    </div>
+                                </SpotlightCard>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        // --- Animation Variants ---
+        const fadeUpVariant = {
+            hidden: { opacity: 0, y: 50 },
+            visible: { 
+                opacity: 1, 
+                y: 0, 
+                transition: { 
+                    duration: 1, 
+                    ease: [0.22, 1, 0.36, 1] 
+                } 
+            }
+        };
+
+        const staggerContainer = {
+            hidden: { opacity: 0 },
+            visible: {
+                opacity: 1,
+                transition: { 
+                    staggerChildren: 0.15, 
+                    delayChildren: 0.1 
+                }
+            }
+        };
+
+        const navVariant = {
+            hidden: { opacity: 0, y: -20 },
+            visible: { 
+                opacity: 1, 
+                y: 0, 
+                transition: { 
+                    duration: 0.8, 
+                    ease: [0.22, 1, 0.36, 1] 
+                } 
+            }
+        };
+
+        // --- i18n Dictionary ---
+        const content = {
+            zh: {
+                nav: {
+                    about: '个人简介',
+                    philosophy: '设计理念',
+                    tools: '趋势洞察',
+                    projects: '代表作品',
+                    journey: '职业履历',
+                },
+                hero: {
+                    available: 'AVAILABLE FOR NEW OPPORTUNITIES',
+                    title: 'Sue Lab',
+                    subtitle: 'AI 驱动的体验设计研究者',
+                    tags: ['10 年资深设计师', '前设计团队负责人', 'AI + 设计融合探索者'],
+                    desc: '从服务百万级用户的互联网大厂，到管理 10+ 人的跨职能团队，再到深耕金融与医疗 AI 的垂直领域。我始终坚持以「用户为中心」为底层逻辑，探索 AI 工具与设计的深度融合，用设计思维重构产品体验，为数字产品注入高效、有温度的用户价值。',
+                    btnChat: 'Online - 对话 Sue Lab 数字分身',
+                    btnWorks: '查看作品集',
+                },
+                philosophy: {
+                    title: '设计理念',
+                    items: [
+                        { title: '理性', desc: '严谨的逻辑推演，在合规与专业中寻找最优解。确保复杂系统的高效运行。' },
+                        { title: '极简', desc: '克制的设计语言，消除冗余信息，用最直观的方式呈现核心功能，让用户直达核心。' },
+                        { title: '共情', desc: '拒绝 AI “黑盒”，让技术在严肃场景中具备可理解性与安全感，用温和的引导降低用户焦虑。' }
+                    ]
+                },
+                tools: {
+                    title: '趋势洞察',
+                    stackTitle: 'AI 工具栈',
+                    trendTitle: 'AI 趋势理解',
+                    trendP1: 'AI 正在从“提效工具”向“协同伙伴”演进。未来的体验设计不再仅仅是界面的排布，而是',
+                    trendHighlight: '人机交互范式的重构',
+                    trendP2: '。设计师的核心价值将从“像素级执行”转移到“系统级定义”与“情感化校准”，在算法的理性与人性的感性之间建立桥梁。'
+                },
+                projects: {
+                    title: '代表作品',
+                    btnPortfolio: '作品集',
+                    items: [
+                        {
+                            num: '01',
+                            title: 'CNABS 数据分析平台',
+                            desc: '从0-1搭建全场景UX体系，助力用户数据查询效率提升60%；易用度评分提升52%',
+                            images: ['https://github.com/suyu929/SueLab/blob/main/CNABS.png?raw=true'],
+                            link: 'https://lhsb3gphzk.feishu.cn/wiki/QodvwBec7iVUz5k7EInce2wKnMc?from=from_copylink'
+                        },
+                        {
+                            num: '02',
+                            title: '阿柏医伴 App',
+                            desc: 'AI驱动全流程及品牌情感化设计，助力核心功能触达效率提升30.2%',
+                            images: ['https://github.com/suyu929/SueLab/blob/main/abai.png?raw=true'],
+                            link: 'https://lhsb3gphzk.feishu.cn/wiki/LCe2w2dpOiZ1o9kxHMwcdpZdnUh?from=from_copylink'
+                        },
+                        {
+                            num: '03',
+                            title: 'AIGC 探索实验室',
+                            desc: '探索 AI 生成内容在设计工作流中的深度应用，构建自动化设计资产生成体系。',
+                            images: ['https://github.com/suyu929/SueLab/blob/main/AIGC.png?raw=true'],
+                            link: 'https://lhsb3gphzk.feishu.cn/wiki/UYm3wrJS2iXgckk1dWacfNK3ndh?from=from_copylink'
+                        }
+                    ]
+                },
+                journey: {
+                    title: '职业履历',
+                    items: [
+                        { year: '2023年9月-至今', role: '光烽资产管理：设计负责人/AI+设计融合探索者', desc: '聚焦金融资产管理，主动拥抱 AI 浪潮，探索 AI 工具与设计全流程的深度融合，输出行业洞察与下一代体验解决方案。' },
+                        { year: '2018年3月-2023年8月', role: '中诚信科技/沃流信息科技：资深UI/UX设计师', desc: '聚焦金融数据、评级系统、AI赋能金融直播，主导 CNABS、云极直播等标杆项目的全链路UX设计。' },
+                        { year: '2014年7月-2016年2月（职业起点）', role: '北辰软件股份/互联网软件集团：UI设计师/前端设计师', desc: '参与多款百万级用户产品迭代，夯实用户研究与交互/视觉全链路底层能力。' }
+                    ]
+                },
+                footer: '© 2026 Sue Lab. Designed by Sue. (v1.52)'
+            },
+            en: {
+                nav: {
+                    about: 'Profile',
+                    philosophy: 'Philosophy',
+                    tools: 'Insights',
+                    projects: 'Works',
+                    journey: 'Journey',
+                },
+                hero: {
+                    available: 'AVAILABLE FOR NEW OPPORTUNITIES',
+                    title: 'Sue Lab',
+                    subtitle: 'AI-Driven Experience Design Researcher',
+                    tags: ['10 Yrs Senior Designer', 'Ex-Design Lead', 'AI + Design Explorer'],
+                    desc: 'From serving millions of users in top tech companies, to managing cross-functional teams of 10+, to diving deep into AI for finance and healthcare. I always adhere to "user-centricity" as the underlying logic, exploring the deep integration of AI tools and design, reconstructing product experiences with design thinking, and injecting efficient, warm user value into digital products.',
+                    btnChat: 'Online - Chat with Sue Lab AI',
+                    btnWorks: 'View Portfolio',
+                },
+                philosophy: {
+                    title: 'Philosophy',
+                    items: [
+                        { title: 'Rationality', desc: 'Rigorous logical deduction, finding the optimal solution within compliance and professionalism. Ensuring the efficient operation of complex systems.' },
+                        { title: 'Minimalism', desc: 'Restrained design language, eliminating redundant information, presenting core functions in the most intuitive way, letting users reach the core directly.' },
+                        { title: 'Empathy', desc: 'Rejecting the AI "black box", making technology understandable and secure in serious scenarios, reducing user anxiety with gentle guidance.' }
+                    ]
+                },
+                tools: {
+                    title: 'Insights',
+                    stackTitle: 'AI Tool Stack',
+                    trendTitle: 'AI Trend Understanding',
+                    trendP1: 'AI is evolving from an "efficiency tool" to a "collaborative partner". Future experience design is no longer just interface layout, but ',
+                    trendHighlight: 'the reconstruction of human-computer interaction paradigms',
+                    trendP2: '. The core value of designers will shift from "pixel-level execution" to "system-level definition" and "emotional calibration", building a bridge between the rationality of algorithms and the sensibility of humanity.'
+                },
+                projects: {
+                    title: 'Works',
+                    btnPortfolio: 'Portfolio',
+                    items: [
+                        {
+                            num: '01',
+                            title: 'CNABS Data Platform',
+                            desc: 'Built full-scenario UX system from 0-1, boosting data query efficiency by 60%; usability score up by 52%',
+                            images: ['https://github.com/suyu929/SueLab/blob/main/CNABS.png?raw=true'],
+                            link: 'https://lhsb3gphzk.feishu.cn/wiki/QodvwBec7iVUz5k7EInce2wKnMc?from=from_copylink'
+                        },
+                        {
+                            num: '02',
+                            title: 'Arbor Medical App',
+                            desc: 'AI-driven full-process and brand emotional design, boosting core function reach efficiency by 30.2%',
+                            images: ['https://github.com/suyu929/SueLab/blob/main/abai.png?raw=true'],
+                            link: 'https://lhsb3gphzk.feishu.cn/wiki/LCe2w2dpOiZ1o9kxHMwcdpZdnUh?from=from_copylink'
+                        },
+                        {
+                            num: '03',
+                            title: 'AIGC Exploration Lab',
+                            desc: 'Exploring the deep application of AI-generated content in design workflows, building an automated design asset generation system.',
+                            images: ['https://github.com/suyu929/SueLab/blob/main/AIGC.png?raw=true'],
+                            link: 'https://lhsb3gphzk.feishu.cn/wiki/UYm3wrJS2iXgckk1dWacfNK3ndh?from=from_copylink'
+                        }
+                    ]
+                },
+                journey: {
+                    title: 'Journey',
+                    items: [
+                        { year: 'Sep 2023 - Present', role: 'Guangfeng Asset Management: Design Lead / AI + Design Explorer', desc: 'Focusing on financial asset management, actively embracing the AI wave, exploring the deep integration of AI tools and the entire design process, outputting industry insights and next-generation experience solutions.' },
+                        { year: 'Mar 2018 - Aug 2023', role: 'CCX Technology / Woliu Information Technology: Senior UI/UX Designer', desc: 'Focusing on financial data, rating systems, and AI-powered financial live streaming, leading the full-link UX design of benchmark projects like CNABS and Yunji Live.' },
+                        { year: 'Jul 2014 - Feb 2016 (Career Start)', role: 'Beichen Software / Internet Software Group: UI Designer / Frontend Designer', desc: 'Participated in the iteration of multiple products with millions of users, consolidating the underlying capabilities of user research and full-link interaction/visual design.' }
+                    ]
+                },
+                footer: '© 2026 Sue Lab. Designed by Sue. (v1.52)'
+            }
+        };
+
+        function App() {
+            const [lang, setLang] = useState(() => {
+                const saved = localStorage.getItem('sue-lab-lang');
+                return (saved === 'en' || saved === 'zh') ? saved : 'zh';
+            });
+            const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+            const [isChatOpen, setIsChatOpen] = useState(false);
+            const [chatInput, setChatInput] = useState('');
+            const [isTyping, setIsTyping] = useState(false);
+            const [chatMessages, setChatMessages] = useState([
+                { role: 'model', text: '你好！我是 Sue Lab 的数字分身。有什么我可以帮你的吗？' }
+            ]);
+            const chatRef = useRef(null);
+            const chatScrollRef = useRef(null);
+            const [countdown, setCountdown] = useState(null);
+            const inactivityTimerRef = useRef(null);
+            const countdownIntervalRef = useRef(null);
+
+            const [isDark, setIsDark] = useState(() => {
+                const saved = localStorage.getItem('sue-lab-theme');
+                return saved ? saved === 'dark' : true;
+            });
+
+            const t = content[lang];
+
+            useEffect(() => {
+                if (isDark) {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('sue-lab-theme', 'dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('sue-lab-theme', 'light');
+                }
+            }, [isDark]);
+
+            useEffect(() => {
+                localStorage.setItem('sue-lab-lang', lang);
+            }, [lang]);
+
+            const resetTimers = () => {
+                if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+                if (countdownIntervalRef.current) clearTimeout(countdownIntervalRef.current);
+                setCountdown(null);
+            };
+
+            useEffect(() => {
+                if (!isChatOpen) {
+                    resetTimers();
+                    return;
+                }
+
+                const startInactivityTimer = () => {
+                    resetTimers();
+                    inactivityTimerRef.current = setTimeout(() => {
+                        setCountdown(10);
+                    }, 30000);
+                };
+
+                startInactivityTimer();
+                return () => resetTimers();
+            }, [chatMessages, isChatOpen, lang]);
+
+            useEffect(() => {
+                if (countdown === null) return;
+                if (countdown > 0) {
+                    countdownIntervalRef.current = setTimeout(() => {
+                        setCountdown(prev => (prev !== null && prev > 0 ? prev - 1 : null));
+                    }, 1000);
+                } else if (countdown === 0) {
+                    setIsChatOpen(false);
+                    setCountdown(null);
+                }
+                return () => {
+                    if (countdownIntervalRef.current) clearTimeout(countdownIntervalRef.current);
+                };
+            }, [countdown]);
+
+            useEffect(() => {
+                // In standalone HTML, we can't easily use process.env.GEMINI_API_KEY
+                // unless we inject it. For now, we'll provide a mock or instructions.
+                const apiKey = ""; // USER: Add your Gemini API Key here if you want real AI
+                if (!chatRef.current && apiKey) {
+                    try {
+                        const ai = new GoogleGenAI({ apiKey });
+                        chatRef.current = ai.chats.create({
+                            model: 'gemini-3-flash-preview',
+                            config: {
+                                systemInstruction: `你是 Sue Lab 的数字分身。
+Sue Lab 是一名拥有 10 年经验的资深设计师、前设计团队负责人，专注于 AI 与设计的融合探索。
+你的回答应该专业、理性、极简、有共情力。
+
+你的背景信息：
+- 资深设计师，拥有 10 年行业经验。
+- 曾任大厂设计团队负责人（管理 10+ 人团队）。
+- 专注于 AI + 设计的融合探索，深耕金融（如 CNABS 数据分析平台）与医疗（如阿柏医伴 App）AI 垂直领域。
+- 设计理念：理性（严谨逻辑）、极简（克制语言）、共情（技术可理解性）。
+- 核心价值：在算法的理性与人性的感性之间建立桥梁。
+
+你可以回答关于 Sue Lab 的职业履历、设计作品、设计理念以及对 AI 趋势的看法。
+如果用户问到你无法回答的个人隐私问题，请礼貌地引导用户关注你的专业领域。
+请使用用户所使用的语言（中文或英文）进行回答。`,
+                            }
+                        });
+                    } catch (e) {
+                        console.error("Failed to initialize Gemini:", e);
+                    }
+                }
+            }, []);
+
+            useEffect(() => {
+                if (chatScrollRef.current) {
+                    chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+                }
+            }, [chatMessages, isTyping]);
+
+            const handleSendMessage = async () => {
+                if (!chatInput.trim()) return;
+                const userText = chatInput;
+                setChatMessages(prev => [...prev, { role: 'user', text: userText }]);
+                setChatInput('');
+                setIsTyping(true);
+
+                // Mock response for standalone version
+                setTimeout(() => {
+                    setChatMessages(prev => [...prev, { role: 'model', text: '你好！这是一个单文件 HTML 演示版本。要启用真实的 AI 对话，请在代码中配置您的 Gemini API Key。' }]);
+                    setIsTyping(false);
+                }, 1000);
+            };
+
+            return (
+                <div className="min-h-screen text-lab-text selection:bg-lab-accent selection:text-white font-sans relative transition-colors duration-300 overflow-x-hidden">
+                    <div className="fixed inset-0 bg-lab-bg z-[-2] transition-colors duration-300" />
+                    
+                    <div className="relative z-10">
+                        <motion.nav 
+                            initial="hidden"
+                            animate="visible"
+                            variants={navVariant}
+                            className="fixed top-0 left-0 right-0 z-50 bg-lab-bg/80 backdrop-blur-xl border-b border-lab-border py-4 transition-colors duration-300"
+                        >
+                            <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+                                <div className="w-[110px] lg:w-[190px] h-[38px] lg:h-[48px] shrink-0">
+                                    <img src="https://github.com/suyu929/SueLab/blob/main/logo.png?raw=true" alt="Sue Lab Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                                </div>
+                                
+                                <div className="hidden lg:flex items-center gap-8 text-sm font-medium text-lab-muted">
+                                    <a href="#about" className="hover:text-lab-text-strong transition-colors">{t.nav.about}</a>
+                                    <a href="#philosophy" className="hover:text-lab-text-strong transition-colors">{t.nav.philosophy}</a>
+                                    <a href="#tools" className="hover:text-lab-text-strong transition-colors">{t.nav.tools}</a>
+                                    <a href="#projects" className="hover:text-lab-text-strong transition-colors">{t.nav.projects}</a>
+                                    <a href="#journey" className="hover:text-lab-text-strong transition-colors">{t.nav.journey}</a>
+                                    
+                                    <div className="flex items-center gap-2">
+                                        <button onClick={() => setIsDark(!isDark)} className="flex items-center justify-center w-8 h-8 rounded-full bg-lab-surface hover:bg-lab-border transition-colors text-lab-text-strong">
+                                            {isDark ? <Sun size={14} /> : <Moon size={14} />}
+                                        </button>
+                                        <button onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')} className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-lab-surface hover:bg-lab-border transition-colors text-lab-text-strong">
+                                            <Globe size={14} />
+                                            {lang === 'zh' ? 'EN' : '中'}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 sm:gap-4 lg:hidden shrink-0">
+                                    <button onClick={() => setIsDark(!isDark)} className="flex items-center justify-center w-7 h-7 rounded-full bg-lab-surface text-lab-text-strong">
+                                        {isDark ? <Sun size={12} /> : <Moon size={12} />}
+                                    </button>
+                                    <button onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')} className="flex items-center gap-1 px-2 py-1 rounded-full bg-lab-surface text-xs text-lab-text-strong">
+                                        <Globe size={12} />
+                                        {lang === 'zh' ? 'EN' : '中'}
+                                    </button>
+                                    <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-lab-text-strong">
+                                        {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {isMobileMenuOpen && (
+                                <div className="absolute top-full left-0 right-0 bg-lab-card border-b border-lab-border py-4 px-6 flex flex-col gap-4 lg:hidden shadow-2xl">
+                                    <a href="#about" onClick={() => setIsMobileMenuOpen(false)} className="text-lab-muted hover:text-lab-text-strong transition-colors">{t.nav.about}</a>
+                                    <a href="#philosophy" onClick={() => setIsMobileMenuOpen(false)} className="text-lab-muted hover:text-lab-text-strong transition-colors">{t.nav.philosophy}</a>
+                                    <a href="#tools" onClick={() => setIsMobileMenuOpen(false)} className="text-lab-muted hover:text-lab-text-strong transition-colors">{t.nav.tools}</a>
+                                    <a href="#projects" onClick={() => setIsMobileMenuOpen(false)} className="text-lab-muted hover:text-lab-text-strong transition-colors">{t.nav.projects}</a>
+                                    <a href="#journey" onClick={() => setIsMobileMenuOpen(false)} className="text-lab-muted hover:text-lab-text-strong transition-colors">{t.nav.journey}</a>
+                                </div>
+                            )}
+                        </motion.nav>
+
+                        <main className="pt-32 pb-32 px-6 max-w-7xl mx-auto space-y-40 relative z-10">
+                            <motion.section id="about" className="relative" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant}>
+                                <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[600px] h-[600px] bg-lab-accent/10 rounded-full blur-[120px] -z-10 pointer-events-none"></div>
+                                <div className="flex flex-col lg:flex-row gap-16 items-center lg:items-start">
+                                    <div className="shrink-0 relative group">
+                                        <div className="w-48 h-48 md:w-64 md:h-64 rounded-full overflow-hidden border border-transparent dark:border-lab-border relative z-10 bg-lab-card p-2">
+                                            <div className="w-full h-full rounded-full overflow-hidden">
+                                                <img src="https://github.com/suyu929/SueLab/blob/main/tx.png?raw=true" alt="Sue Lab" className="w-full h-full object-cover transition-all duration-700 scale-105 group-hover:scale-100" />
+                                            </div>
+                                        </div>
+                                        <button onClick={() => setIsChatOpen(true)} className="absolute bottom-2 right-2 md:bottom-4 md:right-4 z-20 flex items-center justify-center w-12 h-12 md:w-14 md:h-14 bg-lab-text-strong text-lab-bg rounded-full shadow-lg hover:scale-110 transition-transform duration-300 group/btn cursor-pointer">
+                                            <MessageCircle size={24} className="group-hover/btn:animate-pulse" />
+                                            <span className="absolute top-0 right-0 flex h-3 w-3 md:h-4 md:w-4">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                                <span className="relative inline-flex rounded-full h-3 w-3 md:h-4 md:w-4 bg-green-500 border-2 border-lab-bg"></span>
+                                            </span>
+                                        </button>
+                                    </div>
+
+                                    <div className="flex-1 text-center lg:text-left">
+                                        <motion.div variants={fadeUpVariant} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lab-surface text-xs font-gilroy font-medium text-lab-muted mb-6">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-lab-accent"></span>
+                                            {t.hero.available}
+                                        </motion.div>
+                                        <motion.h1 variants={fadeUpVariant} className="text-5xl md:text-7xl font-black mb-6 tracking-tighter text-gradient">{t.hero.title}</motion.h1>
+                                        <motion.h2 variants={fadeUpVariant} className="text-2xl md:text-3xl text-lab-text-strong font-medium mb-8 tracking-tight">{t.hero.subtitle}</motion.h2>
+                                        <motion.div variants={staggerContainer} className="flex flex-wrap justify-center lg:justify-start gap-3 mb-8">
+                                            {t.hero.tags.map((tag, idx) => (
+                                                <motion.span variants={fadeUpVariant} key={idx} className="px-4 py-1.5 bg-lab-tag rounded-full text-sm text-white hover:text-lab-accent transition-colors cursor-default">{tag}</motion.span>
+                                            ))}
+                                        </motion.div>
+                                        <motion.p variants={fadeUpVariant} className="text-lg text-lab-muted leading-relaxed mb-10 max-w-3xl font-normal">{t.hero.desc}</motion.p>
+                                        <motion.div variants={fadeUpVariant} className="flex flex-col sm:flex-row justify-center lg:justify-start gap-4">
+                                            <a href="https://lhsb3gphzk.feishu.cn/wiki/XRyzwi5T9iI8JokJNh3c0uibnUC?from=from_copylink" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-transparent border border-lab-border text-lab-text-strong px-8 py-4 rounded-full text-sm font-bold hover:bg-lab-surface transition-colors">
+                                                {t.hero.btnWorks} <ArrowRight size={16} />
+                                            </a>
+                                        </motion.div>
+                                    </div>
+                                </div>
+                            </motion.section>
+
+                            <motion.section id="philosophy" initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer}>
+                                <div>
+                                    <motion.div variants={fadeUpVariant} className="mb-12">
+                                        <h3 className="text-3xl md:text-4xl font-bold tracking-tight text-lab-text-strong">{t.philosophy.title}</h3>
+                                    </motion.div>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        {t.philosophy.items.map((item, idx) => {
+                                            const icons = [
+                                                <Box key="1" size={36} className="text-lab-text-strong mb-8" />, 
+                                                <Activity key="2" size={36} className="text-lab-text-strong mb-8" />, 
+                                                <svg key="3" xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-lab-text-strong mb-8">
+                                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                                    <rect x="8" y="8" width="8" height="8" rx="1" ry="1" />
+                                                </svg>
+                                            ];
+                                            return (
+                                                <motion.div key={idx} variants={fadeUpVariant}>
+                                                    <SpotlightCard className="p-10 h-full">
+                                                        {icons[idx]}
+                                                        <h4 className="text-2xl font-bold mb-4 text-lab-text-strong">{item.title}</h4>
+                                                        <p className="text-lab-muted leading-relaxed font-normal">{item.desc}</p>
+                                                    </SpotlightCard>
+                                                </motion.div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </motion.section>
+
+                            <motion.section id="tools" initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUpVariant}>
+                                <div>
+                                    <div className="mb-12">
+                                        <h3 className="text-3xl md:text-4xl font-bold tracking-tight text-lab-text-strong">{t.tools.title}</h3>
+                                    </div>
+                                    <div className="flex flex-col gap-16 items-center mt-8">
+                                        <motion.div variants={staggerContainer} className="flex flex-wrap justify-center gap-4 max-w-4xl">
+                                            {['Figma AI', 'Vibe coding', 'Lovart', 'Midjourney', 'ChatGPT', 'Claude','Cursor'].map(tool => (
+                                                <motion.span variants={fadeUpVariant} key={tool} className="px-6 py-3 bg-lab-tag rounded-full text-sm text-white hover:text-lab-accent transition-colors cursor-default">
+                                                    {tool}
+                                                </motion.span>
+                                            ))}
+                                        </motion.div>
+                                        <div className="flex flex-col items-center text-center max-w-3xl">
+                                            <h4 className="text-xl font-bold mb-8 flex items-center justify-center gap-3 text-lab-text-strong">
+                                                <Activity size={24} className="text-lab-accent" /> {t.tools.trendTitle}
+                                            </h4>
+                                            <p className="text-lab-muted leading-relaxed font-normal text-lg">
+                                                {t.tools.trendP1}<strong className="text-lab-text-strong font-medium">{t.tools.trendHighlight}</strong>{t.tools.trendP2}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.section>
+
+                            <motion.section id="projects" initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUpVariant}>
+                                <div>
+                                    <div className="flex items-center justify-between mb-12">
+                                        <h3 className="text-3xl md:text-4xl font-bold tracking-tight text-lab-text-strong">{t.projects.title}</h3>
+                                        <a href="https://lhsb3gphzk.feishu.cn/wiki/XRyzwi5T9iI8JokJNh3c0uibnUC?from=from_copylink" target="_blank" rel="noopener noreferrer" className="hidden sm:flex items-center justify-center gap-2 bg-transparent border border-lab-border text-lab-text-strong px-8 py-3 rounded-full text-sm font-bold hover:bg-lab-surface transition-colors">
+                                            {t.projects.btnPortfolio} <ArrowRight size={16} />
+                                        </a>
+                                    </div>
+                                    <ProjectGrid items={t.projects.items} />
+                                </div>
+                            </motion.section>
+
+                            <motion.section id="journey" initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUpVariant}>
+                                <div>
+                                    <div className="mb-16">
+                                        <h3 className="text-3xl md:text-4xl font-bold tracking-tight text-lab-text-strong">{t.journey.title}</h3>
+                                    </div>
+                                    <div className="relative">
+                                        <div className="absolute left-[15px] top-2 bottom-2 w-px bg-lab-border"></div>
+                                        <div className="space-y-16">
+                                            {t.journey.items.map((item, i) => (
+                                                <motion.div key={i} className="relative pl-12 md:pl-16 group" variants={fadeUpVariant}>
+                                                    <div className="absolute left-[11px] top-1.5 w-2.5 h-2.5 rounded-full bg-lab-accent group-hover:scale-150 transition-transform duration-300"></div>
+                                                    <SpotlightCard className="p-6 md:p-8">
+                                                        <span className="text-sm font-gilroy font-bold text-lab-accent mb-3 block">{item.year}</span>
+                                                        <h4 className="text-xl font-bold text-lab-text-strong mb-1.5">{item.role}</h4>
+                                                        <p className="text-lab-muted leading-relaxed font-normal">{item.desc}</p>
+                                                    </SpotlightCard>
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.section>
+                        </main>
+
+                        <motion.footer initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant} className="border-t border-lab-border py-12 text-center text-sm text-lab-muted font-gilroy">
+                            <p>{t.footer}</p>
+                        </motion.footer>
+
+                        <AnimatePresence>
+                            {isChatOpen && (
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                                    className="fixed bottom-24 right-6 w-80 md:w-96 bg-lab-card border border-lab-border rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col h-[500px] max-h-[80vh]"
+                                >
+                                    <div className="bg-lab-surface px-4 py-3 border-b border-lab-border flex justify-between items-center">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full overflow-hidden">
+                                                <img src="https://github.com/suyu929/SueLab/blob/main/tx.png?raw=true" alt="Sue Lab" className="w-full h-full object-cover" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-sm font-bold text-lab-text-strong">Sue Lab AI</h3>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${countdown !== null ? 'bg-cyan-500 animate-pulse' : 'bg-green-500'}`}></span>
+                                                    <span className="text-xs text-lab-muted">
+                                                        {countdown !== null ? (lang === 'zh' ? `将在 ${countdown}s 后关闭` : `Closing in ${countdown}s`) : 'Online'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button onClick={() => setIsChatOpen(false)} className="text-lab-muted hover:text-lab-text-strong transition-colors">
+                                            <X size={18} />
+                                        </button>
+                                    </div>
+                                    <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+                                        {chatMessages.map((msg, idx) => (
+                                            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                                <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${msg.role === 'user' ? 'bg-lab-text-strong text-lab-bg rounded-br-none' : 'bg-lab-surface text-lab-text-strong rounded-bl-none'}`}>
+                                                    {msg.text}
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {isTyping && (
+                                            <div className="flex justify-start">
+                                                <div className="bg-lab-surface text-lab-text-strong rounded-2xl rounded-bl-none px-4 py-3 text-sm flex items-center gap-1.5">
+                                                    <span className="w-1.5 h-1.5 bg-lab-muted rounded-full animate-bounce"></span>
+                                                    <span className="w-1.5 h-1.5 bg-lab-muted rounded-full animate-bounce" style={{ animationDelay: '0.15s' }}></span>
+                                                    <span className="w-1.5 h-1.5 bg-lab-muted rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></span>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="p-3 border-t border-lab-border bg-lab-card">
+                                        <div className="flex gap-2">
+                                            <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} placeholder={lang === 'zh' ? "输入消息..." : "Type..."} className="flex-1 bg-lab-surface border border-lab-border rounded-full px-4 py-2 text-sm focus:outline-none text-lab-text-strong" />
+                                            <button onClick={handleSendMessage} className="bg-lab-text-strong text-lab-bg w-10 h-10 rounded-full flex items-center justify-center hover:scale-105 transition-transform">
+                                                <ArrowRight size={18} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                </div>
+            );
+        }
+
+        const container = document.getElementById('root');
+        const root = createRoot(container);
+        root.render(<App />);
+    </script>
+</body>
+</html>
