@@ -139,7 +139,7 @@
         import { 
             MessageCircle, Box, Activity, Cpu, Terminal, Sparkles, 
             Wrench, Briefcase, Clock, ArrowRight, Menu, X, Globe, 
-            ChevronLeft, ChevronRight, Moon, Sun 
+            ChevronLeft, ChevronRight, Moon, Sun, Phone, Mail 
         } from 'lucide-react';
         import { GoogleGenAI } from '@google/genai';
         import { motion, AnimatePresence } from 'motion/react';
@@ -285,6 +285,7 @@
                     tools: '趋势洞察',
                     projects: '代表作品',
                     journey: '职业履历',
+                    contact: '联系信息',
                 },
                 hero: {
                     available: 'AVAILABLE FOR NEW OPPORTUNITIES',
@@ -347,6 +348,16 @@
                         { year: '2014年7月-2016年2月（职业起点）', role: '北辰软件股份/互联网软件集团：UI设计师/前端设计师', desc: '参与多款百万级用户产品迭代，夯实用户研究与交互/视觉全链路底层能力。' }
                     ]
                 },
+                contact: {
+                    title: '联系信息',
+                    name: '苏玉',
+                    tel: '15201915138',
+                    telLabel: '电话',
+                    wechat: '微信同号',
+                    email: '409645647@qq.com',
+                    emailLabel: '邮箱',
+                    thanks: '感谢您的阅览。本人将持续更新更多作品，也期待与您交流合作。'
+                },
                 footer: '© 2026 Sue Lab. Designed by Sue. (v1.52)'
             },
             en: {
@@ -356,6 +367,7 @@
                     tools: 'Insights',
                     projects: 'Works',
                     journey: 'Journey',
+                    contact: 'Contact',
                 },
                 hero: {
                     available: 'AVAILABLE FOR NEW OPPORTUNITIES',
@@ -417,6 +429,16 @@
                         { year: 'Mar 2018 - Aug 2023', role: 'CCX Technology / Woliu Information Technology: Senior UI/UX Designer', desc: 'Focusing on financial data, rating systems, and AI-powered financial live streaming, leading the full-link UX design of benchmark projects like CNABS and Yunji Live.' },
                         { year: 'Jul 2014 - Feb 2016 (Career Start)', role: 'Beichen Software / Internet Software Group: UI Designer / Frontend Designer', desc: 'Participated in the iteration of multiple products with millions of users, consolidating the underlying capabilities of user research and full-link interaction/visual design.' }
                     ]
+                },
+                contact: {
+                    title: 'Contact',
+                    name: 'Sue',
+                    tel: '15201915138',
+                    telLabel: 'Tel',
+                    wechat: 'WeChat same number',
+                    email: '409645647@qq.com',
+                    emailLabel: 'E-mail',
+                    thanks: 'Thank you for viewing. I will keep updating more works and look forward to connecting with you.'
                 },
                 footer: '© 2026 Sue Lab. Designed by Sue. (v1.52)'
             }
@@ -573,6 +595,7 @@ Sue Lab 是一名拥有 10 年经验的资深设计师、前设计团队负责�
                                     <a href="#tools" className="hover:text-lab-text-strong transition-colors">{t.nav.tools}</a>
                                     <a href="#projects" className="hover:text-lab-text-strong transition-colors">{t.nav.projects}</a>
                                     <a href="#journey" className="hover:text-lab-text-strong transition-colors">{t.nav.journey}</a>
+                                    <a href="#contact" className="hover:text-lab-text-strong transition-colors">{t.nav.contact}</a>
                                     
                                     <div className="flex items-center gap-2">
                                         <button onClick={() => setIsDark(!isDark)} className="flex items-center justify-center w-8 h-8 rounded-full bg-lab-surface hover:bg-lab-border transition-colors text-lab-text-strong">
@@ -606,6 +629,7 @@ Sue Lab 是一名拥有 10 年经验的资深设计师、前设计团队负责�
                                     <a href="#tools" onClick={() => setIsMobileMenuOpen(false)} className="text-lab-muted hover:text-lab-text-strong transition-colors">{t.nav.tools}</a>
                                     <a href="#projects" onClick={() => setIsMobileMenuOpen(false)} className="text-lab-muted hover:text-lab-text-strong transition-colors">{t.nav.projects}</a>
                                     <a href="#journey" onClick={() => setIsMobileMenuOpen(false)} className="text-lab-muted hover:text-lab-text-strong transition-colors">{t.nav.journey}</a>
+                                    <a href="#contact" onClick={() => setIsMobileMenuOpen(false)} className="text-lab-muted hover:text-lab-text-strong transition-colors">{t.nav.contact}</a>
                                 </div>
                             )}
                         </motion.nav>
@@ -738,6 +762,44 @@ Sue Lab 是一名拥有 10 年经验的资深设计师、前设计团队负责�
                                             ))}
                                         </div>
                                     </div>
+                                </div>
+                            </motion.section>
+
+                            <motion.section id="contact" initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUpVariant}>
+                                <div>
+                                    <div className="mb-12">
+                                        <h3 className="text-3xl md:text-4xl font-bold tracking-tight text-lab-text-strong">{t.contact.title}</h3>
+                                    </div>
+                                    <SpotlightCard className="p-8 md:p-12">
+                                        <div className="flex flex-col md:flex-row justify-between gap-12">
+                                            <div className="space-y-8">
+                                                <div>
+                                                    <h4 className="text-2xl font-bold text-lab-text-strong mb-2">{t.contact.name}</h4>
+                                                    <p className="text-lab-muted leading-relaxed">{t.contact.thanks}</p>
+                                                </div>
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center gap-4 text-lab-text-strong">
+                                                        <div className="w-10 h-10 rounded-full bg-lab-surface flex items-center justify-center">
+                                                            <Phone size={18} className="text-lab-text-strong" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="text-xs text-lab-muted uppercase tracking-wider font-bold">{t.contact.telLabel}</p>
+                                                            <p className="text-lg">{t.contact.tel} <span className="text-sm text-lab-muted font-normal ml-2">({t.contact.wechat})</span></p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-4 text-lab-text-strong">
+                                                        <div className="w-10 h-10 rounded-full bg-lab-surface flex items-center justify-center">
+                                                            <Mail size={18} className="text-lab-text-strong" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="text-xs text-lab-muted uppercase tracking-wider font-bold">{t.contact.emailLabel}</p>
+                                                            <p className="text-lg">{t.contact.email}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </SpotlightCard>
                                 </div>
                             </motion.section>
                         </main>
